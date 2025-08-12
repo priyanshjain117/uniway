@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -5,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:student_helper/core/nami/screens/nami_main.dart';
 import 'package:velocity_x/velocity_x.dart';
-import 'package:student_helper/core/ai_query_solver/screens/ai_query_solver.dart';
+// import 'package:student_helper/core/ai_query_solver/screens/ai_query_solver.dart';
 import 'package:student_helper/core/common/screens/work_in_progress.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -19,7 +21,8 @@ class HomeScreen extends StatelessWidget {
       {
         "title": "AI Query Solver",
         "icon": Icons.auto_awesome,
-        "screen": () => const AiQuerySolver(),
+        "screen":() => WorkInProgressScreen(title: "AI Query Solver"),
+        //  () => const AiQuerySolver(),
       },
       {
         "title": "Assignments",
@@ -53,11 +56,11 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: theme.colorScheme.surfaceDim,
         title: Text(
-          "Student Helper",
-          style: TextStyle(
+          "UNIWAY",
+          style: GoogleFonts.rubik(
             color: theme.colorScheme.onSurface.withAlpha(222),
-            fontWeight: FontWeight.w600,
-            fontSize: 24.sp,
+            fontWeight: FontWeight.w500,
+            fontSize: 32.sp,
           ),
         ),
         centerTitle: true,
@@ -150,12 +153,12 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      right: -20.w,
-                      bottom: -16.h,
+                      right: -25.w,
+                      bottom:Platform.isAndroid? -18.h:16.h,
                       child: Lottie.asset(
                         'assets/lottie/gps_navigation.json',
-                        width: 200,
-                        height: 200,
+                        width: 200.w,
+                        height: 200.h,
                         repeat: true,
                       ),
                     ),

@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:student_helper/core/nami/apis/campus_nav_api.dart';
 import 'package:http/http.dart' as http;
+import 'package:student_helper/core/nami/widgets/location_inputs.dart';
 
 class NamiMain extends StatefulWidget {
   const NamiMain({super.key});
@@ -51,9 +54,21 @@ class _NamiMainState extends State<NamiMain> {
       'lat': 26.841241261658997,
       'lng': 75.5660735192115
     },
-    {'name': 'MUJ DOM Library', 'lat': 26.841648544065848, 'lng': 75.56533929057673},
-    {'name': 'MUJ Law Library', 'lat': 26.843518600668162, 'lng': 75.56399292394734},
+    {
+      'name': 'MUJ DOM Library',
+      'lat': 26.841648544065848,
+      'lng': 75.56533929057673
+    },
+    {
+      'name': 'MUJ Law Library',
+      'lat': 26.843518600668162,
+      'lng': 75.56399292394734
+    },
     {'name': 'Old Mess', 'lat': 26.842962294996134, 'lng': 75.5651385090395},
+    {'name': 'AIC MUJ', 'lat': 26.843819718587728, 'lng': 75.5665295300519},
+    {'name': 'Sharda Pai Auditorium', 'lat': 26.84312477058901, 'lng': 75.56606017796628},
+    {'name': 'Vasanti R. Pai Auditorium', 'lat': 26.843761461504357, 'lng': 75.56205834697577},
+    {'name': 'Grand Staircase', 'lat': 26.842513504647947, 'lng': 75.56555146541382},
     {
       'name': 'Academic Block 1',
       'lat': 26.84259830237035,
@@ -73,6 +88,11 @@ class _NamiMainState extends State<NamiMain> {
       'name': 'Academic Block 4',
       'lat': 26.843965118302908,
       'lng': 75.56489018652901
+    },
+    {
+      'name': 'Workshop',
+      'lat': 26.8437696296453,
+      'lng': 75.56701241102105
     },
   ];
 
@@ -175,6 +195,10 @@ class _NamiMainState extends State<NamiMain> {
     if (steps.isEmpty || currentStepIndex >= steps.length) return;
 
     try {
+      if (useCurrentLocation && endPoint != null) {
+        _updateRouteFromCurrentPosition(position);
+      }
+
       _checkRouteDeviation(position);
       _updateDistanceToNextStep(position);
       _checkStepProgress(position);
@@ -206,6 +230,56 @@ class _NamiMainState extends State<NamiMain> {
     if (hasDeviatedFromRoute && !wasDeviated) {
       _speakStep("You have deviated from the route. Recalculating...");
       _recalculateRoute();
+    }
+  }
+
+  Timer? routeUpdateTimer;
+  DateTime? lastRouteUpdate;
+
+  void _updateRouteFromCurrentPosition(Position position) async {
+    final now = DateTime.now();
+    if (lastRouteUpdate != null &&
+        now.difference(lastRouteUpdate!).inSeconds < 30) {
+      return;
+    }
+
+    final newStartPoint = LatLng(position.latitude, position.longitude);
+
+    if (startPoint != null) {
+      double distanceMoved = Geolocator.distanceBetween(
+        startPoint!.latitude,
+        startPoint!.longitude,
+        newStartPoint.latitude,
+        newStartPoint.longitude,
+      );
+
+      if (distanceMoved < 20) return; 
+    }
+
+    setState(() {
+      startPoint = newStartPoint;
+      lastRouteUpdate = now;
+    });
+
+    try {
+      await _getOptimalRouteQuiet();
+    } catch (e) {
+      print("Failed to update route: $e");
+    }
+  }
+
+  Future<void> _getOptimalRouteQuiet() async {
+    if (startPoint == null || endPoint == null) return;
+
+    try {
+      await _getMultipleRoutes();
+      _selectBestRoute();
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      print("Silent route update failed: $e");
     }
   }
 
@@ -352,145 +426,35 @@ class _NamiMainState extends State<NamiMain> {
     );
   }
 
-  void _selectLocation(String type, Map<String, dynamic> location) {
-    final point = LatLng(location['lat'], location['lng']);
-
-    setState(() {
-      if (type == 'start') {
-        startPoint = point;
-        startController.text = location['name'];
-        useCurrentLocation = false;
-      } else {
-        endPoint = point;
-        destinationController.text = location['name'];
-      }
-    });
-  }
-
   Widget _buildLocationInput() {
     final showGetRoute =
         (startPoint != null && endPoint != null && !isLoadingRoute);
 
-    return Container(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        children: [
-          TextField(
-            controller: startController,
-            decoration: InputDecoration(
-              labelText: 'From',
-              prefixIcon: Icon(Icons.my_location),
-              suffixIcon: IconButton(
-                icon: Icon(Icons.gps_fixed),
-                onPressed: () {
-                  setState(() {
-                    useCurrentLocation = true;
-                    startPoint = currentPosition;
-                    startController.text = "Current Location";
-                  });
-                },
-              ),
-              border: OutlineInputBorder(),
-            ),
-            onTap: () => _showLocationPicker('start'),
-            readOnly: true,
-          ),
-          SizedBox(height: 12),
-          TextField(
-            controller: destinationController,
-            decoration: InputDecoration(
-              labelText: 'To',
-              prefixIcon: Icon(Icons.location_on),
-              border: OutlineInputBorder(),
-            ),
-            onTap: () => _showLocationPicker('destination'),
-            readOnly: true,
-          ),
-          SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: showGetRoute ? _getOptimalRoute : null,
-                  icon: Icon(
-                    Icons.route,
-                    color: showGetRoute
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.white,
-                  ),
-                  label: Text(
-                    'Get Route',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: showGetRoute
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.white),
-                  ),
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: (routePoints.isNotEmpty && !isNavigating)
-                      ? _startNavigation
-                      : isNavigating
-                          ? _stopNavigation
-                          : null,
-                  icon: Icon(isNavigating ? Icons.stop : Icons.navigation,
-                      color: (routePoints.isNotEmpty)
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.white),
-                  label: Text(isNavigating ? 'Stop' : 'Navigate',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: (routePoints.isNotEmpty)
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isNavigating ? Colors.red : null,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLocationPicker(String type) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        height: 300,
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              type == 'start' ? 'Select Starting Point' : 'Select Destination',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: locationSuggestions.length,
-                itemBuilder: (context, index) {
-                  final location = locationSuggestions[index];
-                  return ListTile(
-                    leading: Icon(Icons.location_on),
-                    title: Text(location['name']),
-                    onTap: () {
-                      _selectLocation(type, location);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+    return LocationInputWidget(
+      startController: startController,
+      destinationController: destinationController,
+      useCurrentLocation: useCurrentLocation,
+      showGetRoute: showGetRoute,
+      isNavigating: isNavigating,
+      hasRoute: routePoints.isNotEmpty,
+      currentPosition: currentPosition,
+      locationSuggestions: locationSuggestions,
+      onStartLocationChanged: (bool useCurrentLoc, LatLng? position, String text) {
+        setState(() {
+          useCurrentLocation = useCurrentLoc;
+          startPoint = position;
+          startController.text = text;
+        });
+      },
+      onDestinationChanged: (LatLng endPoint, String text) {
+        setState(() {
+          this.endPoint = endPoint;
+          destinationController.text = text;
+        });
+      },
+      onGetRoute: _getOptimalRoute,
+      onStartNavigation: _startNavigation,
+      onStopNavigation: _stopNavigation,
     );
   }
 
@@ -672,296 +636,285 @@ class _NamiMainState extends State<NamiMain> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: Stack(
+      appBar: AppBar(
+        foregroundColor: theme.colorScheme.surface,
+        elevation: 0,
+        backgroundColor: theme.colorScheme.primary.withAlpha(160),
+        title: Text(
+          "NAMI",
+          style: GoogleFonts.exo2(
+            fontWeight: FontWeight.w700,
+            fontSize: 26.sp,
+          ),
+        ),
+        centerTitle: false,
+      ),
+      body: Column(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary.withAlpha(180),
-                  theme.colorScheme.primary.withAlpha(80),
-                  theme.colorScheme.primary.withAlpha(80),
-                  theme.colorScheme.primary.withAlpha(80),
-                  theme.colorScheme.primary.withAlpha(80),
-                  theme.colorScheme.surfaceDim,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: SafeArea(
-              top: true,
-              bottom: false,
-              child: Column(
-                children: [
-                  _buildLocationInput(),
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        if (currentPosition != null || startPoint != null)
-                          FlutterMap(
-                            mapController: mapController,
-                            options: MapOptions(
-                              initialCenter: currentPosition ??
-                                  startPoint ??
-                                  LatLng(26.8475, 75.5672),
-                              initialZoom: 17.0,
-                              minZoom: 10.0,
-                              maxZoom: 20.0,
-                            ),
-                            children: [
-                              TileLayer(
-                                urlTemplate:
-                                    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                                userAgentPackageName:
-                                    'com.example.student_helper',
+          _buildLocationInput(),
+          Expanded(
+            child: Stack(
+              children: [
+                if (currentPosition != null || startPoint != null)
+                  FlutterMap(
+                    mapController: mapController,
+                    options: MapOptions(
+                      initialCenter: currentPosition ??
+                          startPoint ??
+                          LatLng(26.8475, 75.5672),
+                      initialZoom: 17.0,
+                      minZoom: 10.0,
+                      maxZoom: 20.0,
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        userAgentPackageName:
+                            'com.example.student_helper',
+                      ),
+                      if (routePoints.isNotEmpty)
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: routePoints,
+                              color: isNavigating
+                                  ?  const Color.fromARGB(255, 2, 136, 245)
+                                  : Colors.blue.withAlpha(200),
+                              strokeWidth: 5.0,
+                            )
+                          ],
+                        ),
+                      MarkerLayer(
+                        markers: [
+                          if (currentPosition != null)
+                            Marker(
+                              point: currentPosition!,
+                              width: 40.0,
+                              height: 40.0,
+                              child: Transform.rotate(
+                                angle: currentBearing * math.pi / 180,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white, width: 3),
+                                  ),
+                                  child: const Icon(
+                                    Icons.navigation,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
                               ),
-                              if (routePoints.isNotEmpty)
-                                PolylineLayer(
-                                  polylines: [
-                                    Polyline(
-                                      points: routePoints,
-                                      color: isNavigating
-                                          ? theme.colorScheme.primary
-                                          : Colors.blue.withAlpha(225),
-                                      strokeWidth: 5.0,
-                                    )
+                            ),
+                          if (startPoint != null && !useCurrentLocation)
+                            Marker(
+                              point: startPoint!,
+                              width: 40.0,
+                              height: 40.0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Colors.white, width: 3),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
                                   ],
                                 ),
-                              MarkerLayer(
-                                markers: [
-                                  if (currentPosition != null)
-                                    Marker(
-                                      point: currentPosition!,
-                                      width: 40.0,
-                                      height: 40.0,
-                                      child: Transform.rotate(
-                                        angle: currentBearing * math.pi / 180,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                                color: Colors.white, width: 3),
-                                          ),
-                                          child: const Icon(
-                                            Icons.navigation,
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  if (startPoint != null && !useCurrentLocation)
-                                    Marker(
-                                      point: startPoint!,
-                                      width: 40.0,
-                                      height: 40.0,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.green,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                              color: Colors.white, width: 3),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black26,
-                                              blurRadius: 4,
-                                              offset: Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: const Icon(
-                                          Icons.flag,
-                                          color: Colors.white,
-                                          size: 24,
-                                        ),
-                                      ),
-                                    ),
-                                  if (endPoint != null)
-                                    Marker(
-                                      point: endPoint!,
-                                      width: 40.0,
-                                      height: 40.0,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                              color: Colors.white, width: 3),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black26,
-                                              blurRadius: 4,
-                                              offset: Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: const Icon(
-                                          Icons.location_on,
-                                          color: Colors.white,
-                                          size: 24,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        if (isLoadingLocation)
-                          const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircularProgressIndicator(),
-                                SizedBox(height: 16),
-                                Text("Getting your location..."),
-                              ],
-                            ),
-                          ),
-                        if (isLoadingRoute)
-                          const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircularProgressIndicator(),
-                                SizedBox(height: 16),
-                                Text("Calculating optimal route..."),
-                              ],
-                            ),
-                          ),
-                        if (errorMessage != null)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.error_outline,
-                                      size: 64, color: Colors.red),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    errorMessage!,
-                                    style: TextStyle(
-                                        color: Colors.red, fontSize: 16),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  SizedBox(height: 16),
-                                  ElevatedButton(
-                                    onPressed: _initializeApp,
-                                    child: Text("Retry"),
-                                  ),
-                                ],
+                                child: const Icon(
+                                  Icons.flag,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
                               ),
                             ),
-                          ),
-                        if (isNavigating && steps.isNotEmpty)
-                          Positioned(
-                            top: 16,
-                            left: 16,
-                            right: 16,
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.black87,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.directions,
-                                          color: Colors.white, size: 20),
-                                      SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          "Step ${currentStepIndex + 1} of ${steps.length}",
-                                          style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12),
-                                        ),
-                                      ),
-                                      if (distanceToNextStep > 0)
-                                        Text(
-                                          _formatDistance(distanceToNextStep),
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12),
-                                        ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    steps[currentStepIndex]['instruction']
-                                        .toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  if (estimatedTimeArrival > 0) ...[
-                                    SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.access_time,
-                                            color: Colors.white70, size: 16),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          "ETA: ${_formatTime(estimatedTimeArrival)}",
-                                          style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12),
-                                        ),
-                                      ],
+                          if (endPoint != null)
+                            Marker(
+                              point: endPoint!,
+                              width: 40.0,
+                              height: 40.0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Colors.white, width: 3),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
                                     ),
                                   ],
-                                  if (hasDeviatedFromRoute)
-                                    Container(
-                                      margin: EdgeInsets.only(top: 8),
-                                      padding: EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.warning,
-                                              color: Colors.white, size: 16),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            "Route deviation detected",
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                ],
+                                ),
+                                child: const Icon(
+                                  Icons.location_on,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
                               ),
                             ),
-                          ),
-                        if (currentPosition != null && !isLoadingLocation)
-                          Positioned(
-                            bottom: 16,
-                            right: 16,
-                            child: FloatingActionButton(
-                              mini: true,
-                              onPressed: () {
-                                if (currentPosition != null) {
-                                  mapController.move(currentPosition!, 18.0);
-                                }
-                              },
-                              child: Icon(Icons.my_location),
-                            ),
-                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                if (isLoadingLocation)
+                  const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text("Getting your location..."),
                       ],
                     ),
                   ),
-                ],
-              ),
+                if (isLoadingRoute)
+                  const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text("Calculating optimal route..."),
+                      ],
+                    ),
+                  ),
+                if (errorMessage != null)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline,
+                              size: 64, color: Colors.red),
+                          SizedBox(height: 16),
+                          Text(
+                            errorMessage!,
+                            style: TextStyle(
+                                color: Colors.red, fontSize: 16),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _initializeApp,
+                            child: Text("Retry"),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (isNavigating && steps.isNotEmpty)
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.directions,
+                                  color: Colors.white, size: 20),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "Step ${currentStepIndex + 1} of ${steps.length}",
+                                  style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12),
+                                ),
+                              ),
+                              if (distanceToNextStep > 0)
+                                Text(
+                                  _formatDistance(distanceToNextStep),
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12),
+                                ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            steps[currentStepIndex]['instruction']
+                                .toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          if (estimatedTimeArrival > 0) ...[
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(Icons.access_time,
+                                    color: Colors.white70, size: 16),
+                                SizedBox(width: 4),
+                                Text(
+                                  "ETA: ${_formatTime(estimatedTimeArrival)}",
+                                  style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (hasDeviatedFromRoute)
+                            Container(
+                              margin: EdgeInsets.only(top: 8),
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.warning,
+                                      color: Colors.white, size: 16),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Route deviation detected",
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (currentPosition != null && !isLoadingLocation)
+                  Positioned(
+                    bottom: 16,
+                    right: 16,
+                    child: FloatingActionButton(
+                      mini: true,
+                      onPressed: () {
+                        if (currentPosition != null) {
+                          mapController.move(currentPosition!, 18.0);
+                        }
+                      },
+                      child: Icon(Icons.my_location),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
