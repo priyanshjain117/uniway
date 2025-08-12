@@ -61,7 +61,7 @@ lib/
 │           └── work_in_progress.dart
 └── main.dart
 
-
+```
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -70,7 +70,7 @@ lib/
 - An emulator or a connected physical device
 
 ### Installation
-```'''
+```
 # Clone the repository
 git clone https://github.com/yourusername/uniway.git
 cd uniway
@@ -80,4 +80,4 @@ flutter pub get
 
 # Run the app
 flutter run
-'''```
+```
