@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -154,7 +152,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     Positioned(
                       right: -25.w,
-                      bottom:Platform.isAndroid? -18.h:16.h,
+                      bottom:-18.h,
                       child: Lottie.asset(
                         'assets/lottie/gps_navigation.json',
                         width: 200.w,

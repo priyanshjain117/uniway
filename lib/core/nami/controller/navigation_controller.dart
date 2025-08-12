@@ -114,7 +114,7 @@ class NavigationController extends GetxController {
   }
 
   Future<void> _initializeApp() async {
-    await _getCurrentLocation();
+    await getCurrentLocation();
     await _setupTTS();
   }
 
@@ -128,7 +128,7 @@ class NavigationController extends GetxController {
     }
   }
 
-  Future<void> _getCurrentLocation() async {
+  Future<void> getCurrentLocation() async {
     try {
       isLoadingLocation.value = true;
       errorMessage.value = '';
@@ -214,7 +214,7 @@ class NavigationController extends GetxController {
   void _updateRouteFromCurrentPosition(Position position) async {
     final now = DateTime.now();
     if (_lastRouteUpdate != null &&
-        now.difference(_lastRouteUpdate!).inSeconds < 30) {
+        now.difference(_lastRouteUpdate!).inSeconds < 30) {//30 to 5
       return;
     }
 
@@ -228,7 +228,7 @@ class NavigationController extends GetxController {
         newStartPoint.longitude,
       );
 
-      if (distanceMoved < 20) return;
+      if (distanceMoved < 20) return;//20 to 5
     }
 
     startPoint.value = newStartPoint;
@@ -236,6 +236,7 @@ class NavigationController extends GetxController {
 
     try {
       await _getOptimalRouteQuiet();
+      print("✅ Route updated successfully");
     } catch (e) {
       print("Failed to update route: $e");
     }
@@ -493,7 +494,7 @@ class NavigationController extends GetxController {
   }
 
   Future<void> _getSingleRoute(String url, String preference, bool isMainRoute) async {
-    
+
     final Map<String, dynamic> body = {
       "coordinates": [
         [startPoint.value!.longitude, startPoint.value!.latitude],
