@@ -65,14 +65,14 @@ lib/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Flutter SDK (latest stable)
-- Dart 3.x+
+- Flutter SDK 3.27.1
+- Dart 3.6.0
 - An emulator or a connected physical device
 
 ### Installation
 ```
 # Clone the repository
-git clone https://github.com/yourusername/uniway.git
+git clone https://github.com/priyanshjain117/uniway
 cd uniway
 
 # Install dependencies
@@ -81,3 +81,29 @@ flutter pub get
 # Run the app
 flutter run
 ```
+
+
+## 🛡️ License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 👨💻 Author
+
+**Priyanshu**  
+Developer •  Designer •  Problem Solver
+
+[GitHub](https://github.com/priyanshjain117) | [LinkedIn](https://www.linkedin.com/in/priyanshu-jain-995b08322/)
+
+---
+
+*Made with ❤️ for the campus community*
