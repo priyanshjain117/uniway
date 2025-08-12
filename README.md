@@ -46,14 +46,14 @@ The app integrates **campus navigation**, **home dashboard features**, and a **b
 ```plaintext
 lib/
 ├── core/
-│   ├── home/
-│   │   └── screens/
-│   │       └── home_screen.dart
+│   ├── home_screen.dart
 │   ├── nami/
 │   │   ├── controllers/
 │   │   │   └── navigation_controller.dart
 │   │   ├── screens/
 │   │   │   └── nami_main.dart
+│   │   ├── widgets/
+│   │   │   └── location_inputs.dart
 │   │   └── apis/
 │   │       └── campus_nav_api.dart
 │   └── common/

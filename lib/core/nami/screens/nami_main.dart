@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:get/get.dart';
-import 'package:student_helper/core/nami/controller/navigation_controller.dart';
+import 'package:student_helper/core/nami/controllers/navigation_controller.dart';
 import 'package:student_helper/core/nami/widgets/location_inputs.dart';
 
 class NamiMain extends StatelessWidget {
