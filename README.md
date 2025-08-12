@@ -1,16 +1,62 @@
-# UNIWAY
+# 📚 UNIWAY
 
-A new Flutter project.
+A **Flutter**-based mobile application designed to make campus life smarter, easier, and more connected.  
+The app integrates **campus navigation**, **home dashboard features**, and a **beautiful, responsive UI** optimized for all devices.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## ✨ Features
 
-A few resources to get you started if this is your first Flutter project:
+### 🏠 Home Dashboard
+- Modern UI with **Google Fonts** and **Lottie animations** for a smooth, welcoming experience.
+- Quick navigation to major app sections.
+- Fully responsive with **flutter_screenutil** for consistent scaling.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### 🧭 Campus Navigation (Nami)
+- Real-time navigation with **interactive maps** using `flutter_map`.
+- **GPS-based location tracking** powered by `geolocator`.
+- Voice-assisted turn-by-turn directions with **Text-to-Speech (TTS)**.
+- Dynamic path calculation via **CampusNav API**.
+- Supports route recalculations on-the-fly.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 🌟 Additional Highlights
+- **GetX** state management for reactive, organized code.
+- **VelocityX** for rapid and elegant UI building.
+- Modular, maintainable architecture for future feature expansion.
+- Easily adaptable for other campuses or environments.
+
+---
+
+## 🛠️ Tech Stack
+
+| Category       | Technology / Package |
+|----------------|----------------------|
+| Framework      | Flutter (Dart)       |
+| State Mgmt     | GetX                 |
+| UI/UX          | VelocityX, Google Fonts, Lottie Animations |
+| Maps           | flutter_map, latlong2 |
+| GPS            | geolocator           |
+| Voice          | flutter_tts          |
+| Networking     | http                 |
+
+---
+
+## 📂 Project Structure
+
+```plaintext
+lib/
+├── core/
+│   ├── home/
+│   │   └── screens/
+│   │       └── home_screen.dart
+│   ├── nami/
+│   │   ├── controllers/
+│   │   │   └── navigation_controller.dart
+│   │   ├── screens/
+│   │   │   └── nami_main.dart
+│   │   └── apis/
+│   │       └── campus_nav_api.dart
+│   └── common/
+│       └── screens/
+│           └── work_in_progress.dart
+└── main.dart

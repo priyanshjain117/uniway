@@ -57,7 +57,7 @@ class NavigationController extends GetxController {
     {'name': 'Old Mess', 'lat': 26.842962294996134, 'lng': 75.5651385090395},
     {'name': 'AIC MUJ', 'lat': 26.843819718587728, 'lng': 75.5665295300519},
     {'name': 'Sharda Pai Auditorium', 'lat': 26.84312477058901, 'lng': 75.56606017796628},
-    {'name': 'Vasanti R. Pai Auditorium', 'lat': 26.843761461504357, 'lng': 75.56205834697577},
+    {'name': 'Vasanti R. Pai Auditorium', 'lat': 26.84385668018438, 'lng': 75.56419798132941},
     {'name': 'Grand Staircase', 'lat': 26.842513504647947, 'lng': 75.56555146541382},
     {
       'name': 'Academic Block 1',
@@ -71,8 +71,8 @@ class NavigationController extends GetxController {
     },
     {
       'name': 'Academic Block 3',
-      'lat': 26.843951810830465,
-      'lng': 75.56492052504308
+      'lat': 26.843655778782438,
+      'lng': 75.56438003382262
     },
     {
       'name': 'Academic Block 4',
@@ -214,7 +214,7 @@ class NavigationController extends GetxController {
   void _updateRouteFromCurrentPosition(Position position) async {
     final now = DateTime.now();
     if (_lastRouteUpdate != null &&
-        now.difference(_lastRouteUpdate!).inSeconds < 30) {//30 to 5
+        now.difference(_lastRouteUpdate!).inSeconds < 30) {
       return;
     }
 
@@ -228,7 +228,7 @@ class NavigationController extends GetxController {
         newStartPoint.longitude,
       );
 
-      if (distanceMoved < 20) return;//20 to 5
+      if (distanceMoved < 20) return;
     }
 
     startPoint.value = newStartPoint;
@@ -236,7 +236,7 @@ class NavigationController extends GetxController {
 
     try {
       await _getOptimalRouteQuiet();
-      print("✅ Route updated successfully");
+      print("Route updated successfully");
     } catch (e) {
       print("Failed to update route: $e");
     }
