@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:latlong2/latlong.dart';
 
 class LocationInputWidget extends StatefulWidget {
@@ -41,6 +42,63 @@ class LocationInputWidget extends StatefulWidget {
 class _LocationInputWidgetState extends State<LocationInputWidget> {
   List<Map<String, dynamic>> _filteredStart = [];
   List<Map<String, dynamic>> _filteredDest = [];
+  
+  // Add focus nodes to track which field is active
+  final FocusNode _startFocusNode = FocusNode();
+  final FocusNode _destFocusNode = FocusNode();
+  
+  // Track which field is currently showing suggestions
+  bool _showStartSuggestions = false;
+  bool _showDestSuggestions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Add listeners to focus nodes
+    _startFocusNode.addListener(() {
+      if (_startFocusNode.hasFocus) {
+        setState(() {
+          _showStartSuggestions = true;
+          _showDestSuggestions = false;
+          // Close destination suggestions and select top if available
+          if (_filteredDest.isNotEmpty) {
+            _selectTopSuggestion('destination');
+          }
+        });
+      }
+    });
+    
+    _destFocusNode.addListener(() {
+      if (_destFocusNode.hasFocus) {
+        setState(() {
+          _showDestSuggestions = true;
+          _showStartSuggestions = false;
+          // Close start suggestions and select top if available
+          if (_filteredStart.isNotEmpty) {
+            _selectTopSuggestion('start');
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _startFocusNode.dispose();
+    _destFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _selectTopSuggestion(String type) {
+    if (type == 'start' && _filteredStart.isNotEmpty) {
+      final topSuggestion = _filteredStart.first;
+      _selectLocation('start', topSuggestion);
+    } else if (type == 'destination' && _filteredDest.isNotEmpty) {
+      final topSuggestion = _filteredDest.first;
+      _selectLocation('destination', topSuggestion);
+    }
+  }
 
   void _useCurrentLocation() {
     widget.onStartLocationChanged(
@@ -48,6 +106,10 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
       widget.currentPosition,
       "Current Location",
     );
+    setState(() {
+      _filteredStart.clear();
+      _showStartSuggestions = false;
+    });
   }
 
   void _selectLocation(String type, Map<String, dynamic> location) {
@@ -55,17 +117,23 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
     if (type == 'start') {
       widget.onStartLocationChanged(false, point, location['name']);
       widget.startController.text = location['name'];
-      setState(() => _filteredStart.clear());
+      setState(() {
+        _filteredStart.clear();
+        _showStartSuggestions = false;
+      });
     } else {
       widget.onDestinationChanged(point, location['name']);
       widget.destinationController.text = location['name'];
-      setState(() => _filteredDest.clear());
+      setState(() {
+        _filteredDest.clear();
+        _showDestSuggestions = false;
+      });
     }
   }
 
   List<Map<String, dynamic>> _getSuggestions(String pattern) {
     if (pattern.isEmpty) {
-      return widget.locationSuggestions.take(8).toList();
+      return widget.locationSuggestions.take(4).toList();
     }
 
     final query = pattern.toLowerCase().trim();
@@ -86,7 +154,7 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
       return aName.compareTo(bName);
     });
 
-    return filtered.take(8).toList();
+    return filtered.take(4).toList();
   }
 
   Widget _buildHighlightedText(String text, String query) {
@@ -128,6 +196,8 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
     required List<Map<String, dynamic>> filteredList,
     required Function(String) onChanged,
     required Function(Map<String, dynamic>) onTapLocation,
+    required FocusNode focusNode,
+    required bool showSuggestions,
     Widget? suffix,
     bool includeCurrentLocation = false,
     VoidCallback? onUseCurrentLocation,
@@ -136,6 +206,7 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
       children: [
         TextField(
           controller: controller,
+          focusNode: focusNode,
           onChanged: onChanged,
           decoration: InputDecoration(
             labelText: label,
@@ -146,7 +217,7 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
             ),
           ),
         ),
-        if (filteredList.isNotEmpty)
+        if (filteredList.isNotEmpty && showSuggestions)
           Container(
             margin: const EdgeInsets.only(top: 4),
             decoration: BoxDecoration(
@@ -172,7 +243,6 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
                     onTap: () {
                       controller.text = "Current Location";
                       if (onUseCurrentLocation != null) onUseCurrentLocation();
-                      setState(() => filteredList.clear());
                     },
                   ),
                 ...filteredList.map((location) {
@@ -198,56 +268,69 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary.withAlpha(160),
-            theme.colorScheme.primary.withAlpha(80),
-            theme.colorScheme.surfaceDim,
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        setState(() {
+          _showStartSuggestions = false;
+          _showDestSuggestions = false;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary.withAlpha(160),
+              theme.colorScheme.primary.withAlpha(80),
+              theme.colorScheme.surfaceDim,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildTypeAheadField(
-            label: "From",
-            controller: widget.startController,
-            filteredList: _filteredStart,
-            onChanged: (pattern) =>
-                setState(() => _filteredStart = _getSuggestions(pattern)),
-            onTapLocation: (loc) => _selectLocation('start', loc),
-            suffix: CurrentLocationButton(
-              onPressed: _useCurrentLocation,
-              isActive: widget.useCurrentLocation,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildTypeAheadField(
+              label: "From",
+              controller: widget.startController,
+              filteredList: _filteredStart,
+              focusNode: _startFocusNode,
+              showSuggestions: _showStartSuggestions,
+              onChanged: (pattern) =>
+                  setState(() => _filteredStart = _getSuggestions(pattern)),
+              onTapLocation: (loc) => _selectLocation('start', loc),
+              suffix: CurrentLocationButton(
+                onPressed: _useCurrentLocation,
+                isActive: widget.useCurrentLocation,
+              ),
+              includeCurrentLocation: true,
+              onUseCurrentLocation: _useCurrentLocation,
             ),
-            includeCurrentLocation: true,
-            onUseCurrentLocation: _useCurrentLocation,
-          ),
-          const SizedBox(height: 12),
-
-          _buildTypeAheadField(
-            label: "To",
-            controller: widget.destinationController,
-            filteredList: _filteredDest,
-            onChanged: (pattern) =>
-                setState(() => _filteredDest = _getSuggestions(pattern)),
-            onTapLocation: (loc) => _selectLocation('destination', loc),
-          ),
-          const SizedBox(height: 12),
-
-          RouteActionButtons(
-            showGetRoute: widget.showGetRoute,
-            isNavigating: widget.isNavigating,
-            hasRoute: widget.hasRoute,
-            onGetRoute: widget.onGetRoute,
-            onStartNavigation: widget.onStartNavigation,
-            onStopNavigation: widget.onStopNavigation,
-          ),
-        ],
+            SizedBox(height: 8.h),
+        
+            _buildTypeAheadField(
+              label: "To",
+              controller: widget.destinationController,
+              filteredList: _filteredDest,
+              focusNode: _destFocusNode,
+              showSuggestions: _showDestSuggestions,
+              onChanged: (pattern) =>
+                  setState(() => _filteredDest = _getSuggestions(pattern)),
+              onTapLocation: (loc) => _selectLocation('destination', loc),
+            ),
+            SizedBox(height: 6.h),
+        
+            RouteActionButtons(
+              showGetRoute: widget.showGetRoute,
+              isNavigating: widget.isNavigating,
+              hasRoute: widget.hasRoute,
+              onGetRoute: widget.onGetRoute,
+              onStartNavigation: widget.onStartNavigation,
+              onStopNavigation: widget.onStopNavigation,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -276,7 +359,6 @@ class CurrentLocationButton extends StatelessWidget {
   }
 }
 
-// Route Buttons
 class RouteActionButtons extends StatelessWidget {
   final bool showGetRoute;
   final bool isNavigating;
@@ -319,7 +401,7 @@ class RouteActionButtons extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12.w),
         Expanded(
           child: ElevatedButton.icon(
             onPressed: (hasRoute && !isNavigating)
