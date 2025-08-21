@@ -74,7 +74,6 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
       return name.contains(query);
     }).toList();
 
-    // Sort by relevance
     filtered.sort((a, b) {
       final aName = a['name'].toString().toLowerCase();
       final bName = b['name'].toString().toLowerCase();
@@ -214,7 +213,6 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // From Field
           _buildTypeAheadField(
             label: "From",
             controller: widget.startController,
@@ -231,7 +229,6 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
           ),
           const SizedBox(height: 12),
 
-          // To Field
           _buildTypeAheadField(
             label: "To",
             controller: widget.destinationController,
@@ -242,7 +239,6 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
           ),
           const SizedBox(height: 12),
 
-          // Route Buttons
           RouteActionButtons(
             showGetRoute: widget.showGetRoute,
             isNavigating: widget.isNavigating,
@@ -257,7 +253,6 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
   }
 }
 
-// Current Location Button
 class CurrentLocationButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isActive;
