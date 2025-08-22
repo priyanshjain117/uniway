@@ -196,9 +196,10 @@ class NamiMain extends StatelessWidget {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () => Navigator.pop(context),
-                        icon: Icon(Icons.close, size: 18.sp),
+                        icon: Icon(Icons.close, size: 18.sp,color: Colors.white,),
                         label: Text(
                           "Close",
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.exo2(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.w500,
