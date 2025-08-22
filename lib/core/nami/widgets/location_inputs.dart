@@ -43,11 +43,9 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
   List<Map<String, dynamic>> _filteredStart = [];
   List<Map<String, dynamic>> _filteredDest = [];
   
-  // Add focus nodes to track which field is active
   final FocusNode _startFocusNode = FocusNode();
   final FocusNode _destFocusNode = FocusNode();
   
-  // Track which field is currently showing suggestions
   bool _showStartSuggestions = false;
   bool _showDestSuggestions = false;
 
@@ -55,13 +53,11 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
   void initState() {
     super.initState();
     
-    // Add listeners to focus nodes
     _startFocusNode.addListener(() {
       if (_startFocusNode.hasFocus) {
         setState(() {
           _showStartSuggestions = true;
           _showDestSuggestions = false;
-          // Close destination suggestions and select top if available
           if (_filteredDest.isNotEmpty) {
             _selectTopSuggestion('destination');
           }
@@ -74,7 +70,6 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
         setState(() {
           _showDestSuggestions = true;
           _showStartSuggestions = false;
-          // Close start suggestions and select top if available
           if (_filteredStart.isNotEmpty) {
             _selectTopSuggestion('start');
           }

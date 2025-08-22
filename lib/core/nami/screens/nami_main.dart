@@ -6,7 +6,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:get/get.dart';
 import 'package:student_helper/core/nami/controllers/navigation_controller.dart';
+import 'package:student_helper/core/nami/screens/admin_location.dart';
 import 'package:student_helper/core/nami/widgets/location_inputs.dart';
+import 'package:velocity_x/velocity_x.dart';
+import 'package:flutter/services.dart';
 
 class NamiMain extends StatelessWidget {
   const NamiMain({super.key});
@@ -29,6 +32,16 @@ class NamiMain extends StatelessWidget {
           ),
         ),
         centerTitle: false,
+        actions: [
+          IconButton(
+              onPressed: () {
+                Get.to(()=>AdminLocationPage());
+              },
+              icon: Icon(
+                Icons.admin_panel_settings,
+                size: 32.sp,
+              ))
+        ],
       ),
       body: Column(
         children: [
@@ -49,28 +62,362 @@ class NamiMain extends StatelessWidget {
     );
   }
 
+  void _showLocationInfo(
+      BuildContext context, String title, String name, String description,LatLng position) {
+    final theme = Theme.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.5, 
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: EdgeInsets.only(top: 12.h),
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.all(20.w),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: title.contains("From")
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        title.contains("From") ? Icons.flag : Icons.location_on,
+                        color:
+                            title.contains("From") ? Colors.green : Colors.red,
+                        size: 24.sp,
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.exo2(
+                              fontSize: 20.sp,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            name.isNotEmpty ? name : "Unknown Location",
+                            style: GoogleFonts.exo2(
+                              fontSize: 14.sp,
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                height: 1.h,
+                margin: EdgeInsets.symmetric(horizontal: 20.w),
+                color: Colors.grey.shade200,
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: EdgeInsets.all(20.w),
+                  itemCount: _getLocationInfoItems(position,description).length,
+                  itemBuilder: (context, index) {
+                    final items = _getLocationInfoItems(position,description);
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 16.h),
+                      child: items[index],
+                    );
+                  },
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          final coords =
+                              "${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}";
+                          Clipboard.setData(ClipboardData(text: coords));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Copied to clipboard!")),
+                          );
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.copy, size: 18.sp),
+                        label: Text(
+                          "Copy Coords",
+                          style: GoogleFonts.exo2(fontSize: 14.sp),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close, size: 18.sp),
+                        label: Text(
+                          "Close",
+                          style: GoogleFonts.exo2(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _getLocationInfoItems(LatLng position, String description) {
+    return [
+      _buildInfoCard(
+        Get.context!,
+        icon: Icons.gps_fixed,
+        iconColor: Colors.blue,
+        title: "Coordinates",
+        children: [
+          _buildInfoRow(
+            Get.context!,
+            label: "Latitude",
+            value: "${position.latitude.toStringAsFixed(6)}°",
+            icon: Icons.arrow_upward,
+          ),
+          SizedBox(height: 8.h),
+          _buildInfoRow(
+            Get.context!,
+            label: "Longitude",
+            value: "${position.longitude.toStringAsFixed(6)}°",
+            icon: Icons.arrow_forward,
+          ),
+        ],
+      ),
+
+      _buildInfoCard(
+        Get.context!,
+        icon: Icons.info_outline,
+        iconColor: Colors.orange,
+        title: "Location Details",
+        children: [
+          _buildInfoRow(
+            Get.context!,
+            label: "Information",
+            value: description,
+            icon: Icons.straighten,
+          ),
+          SizedBox(height: 8.h),
+          _buildInfoRow(
+            Get.context!,
+            label: "Precision",
+            value: "High (±5m)",
+            icon: Icons.straighten,
+          ),
+          SizedBox(height: 8.h),
+          _buildInfoRow(
+            Get.context!,
+            label: "Format",
+            value: "Decimal Degrees",
+            icon: Icons.format_list_numbered,
+          ),
+        ],
+      ),
+
+      // _buildInfoCard(
+      //   Get.context!,
+      //   icon: Icons.straighten,
+      //   iconColor: Colors.purple,
+      //   title: "Distance Info",
+      //   children: [
+      //     _buildInfoRow(
+      //       Get.context!,
+      //       label: "From Current",
+      //       value: "Calculating...",
+      //       icon: Icons.my_location,
+      //     ),
+      //     SizedBox(height: 8.h),
+      //     _buildInfoRow(
+      //       Get.context!,
+      //       label: "Elevation",
+      //       value: "Unknown",
+      //       icon: Icons.terrain,
+      //     ),
+      //   ],
+      // ),
+    ];
+  }
+
+  Widget _buildInfoCard(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required List<Widget> children,
+  }) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 20.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Text(
+                title,
+                style: GoogleFonts.exo2(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16.sp,
+          color: theme.colorScheme.onSurface.withOpacity(0.5),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          flex: 2,
+          child: Text(
+            "$label:",
+            style: GoogleFonts.exo2(
+              fontSize: 14.sp,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            style: GoogleFonts.exo2(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface,
+            ),
+            textAlign: TextAlign.end,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildLocationInput(NavigationController controller) {
     return Obx(() {
-      final showGetRoute = (controller.startPoint.value != null && 
-                           controller.endPoint.value != null && 
-                           !controller.isLoadingRoute.value);
+      final showGetRoute = (controller.startPoint.value != null &&
+          controller.endPoint.value != null &&
+          !controller.isLoadingRoute.value);
 
       return LocationInputWidget(
         startController: TextEditingController(
-          text: controller.useCurrentLocation.value 
-              ? "Current Location" 
-              : _getLocationName(controller.startPoint.value)
-        ),
+            text: controller.useCurrentLocation.value
+                ? "Current Location"
+                : _getLocationName(controller.startPoint.value)),
         destinationController: TextEditingController(
-          text: _getLocationName(controller.endPoint.value)
-        ),
+            text: _getLocationName(controller.endPoint.value)),
         useCurrentLocation: controller.useCurrentLocation.value,
         showGetRoute: showGetRoute,
         isNavigating: controller.isNavigating.value,
         hasRoute: controller.routePoints.isNotEmpty,
         currentPosition: controller.currentPosition.value,
         locationSuggestions: controller.locationSuggestions,
-        onStartLocationChanged: (bool useCurrentLoc, LatLng? position, String text) {
+        onStartLocationChanged:
+            (bool useCurrentLoc, LatLng? position, String text) {
           controller.setStartPoint(position, isCurrentLocation: useCurrentLoc);
         },
         onDestinationChanged: (LatLng endPoint, String text) {
@@ -82,10 +429,9 @@ class NamiMain extends StatelessWidget {
       );
     });
   }
-
   Widget _buildMap(NavigationController controller) {
     return Obx(() {
-      if (controller.currentPosition.value == null && 
+      if (controller.currentPosition.value == null &&
           controller.startPoint.value == null) {
         return Container();
       }
@@ -159,7 +505,7 @@ class NamiMain extends StatelessWidget {
         );
       }
 
-      if (controller.startPoint.value != null && 
+      if (controller.startPoint.value != null &&
           !controller.useCurrentLocation.value) {
         markers.add(
           Marker(
@@ -183,7 +529,15 @@ class NamiMain extends StatelessWidget {
                 Icons.flag,
                 color: Colors.white,
                 size: 24,
-              ),
+              ).onLongPress(() {
+                _showLocationInfo(
+                  Get.context!,
+                  "From Location",
+                  _getLocationName(controller.startPoint.value),
+                  _getLocationDescription(controller.startPoint.value),
+                  controller.startPoint.value!,
+                );
+              }, key),
             ),
           ),
         );
@@ -212,7 +566,15 @@ class NamiMain extends StatelessWidget {
                 Icons.location_on,
                 color: Colors.white,
                 size: 24,
-              ),
+              ).onLongPress(() {
+                _showLocationInfo(
+                  Get.context!,
+                  "To Location",
+                  _getLocationName(controller.endPoint.value),
+                  _getLocationDescription(controller.endPoint.value),
+                  controller.endPoint.value!,
+                );
+              }, key),
             ),
           ),
         );
@@ -317,7 +679,8 @@ class NamiMain extends StatelessWidget {
                   ),
                   if (controller.distanceToNextStep.value > 0)
                     Text(
-                      controller.formatDistance(controller.distanceToNextStep.value),
+                      controller
+                          .formatDistance(controller.distanceToNextStep.value),
                       style: TextStyle(color: Colors.white, fontSize: 12),
                     ),
                 ],
@@ -325,7 +688,9 @@ class NamiMain extends StatelessWidget {
               SizedBox(height: 8),
               Text(
                 controller.currentStepIndex.value < controller.steps.length
-                    ? controller.steps[controller.currentStepIndex.value]['instruction'].toString()
+                    ? controller.steps[controller.currentStepIndex.value]
+                            ['instruction']
+                        .toString()
                     : "",
                 style: const TextStyle(
                   color: Colors.white,
@@ -374,7 +739,7 @@ class NamiMain extends StatelessWidget {
 
   Widget _buildLocationButton(NavigationController controller) {
     return Obx(() {
-      if (controller.currentPosition.value == null || 
+      if (controller.currentPosition.value == null ||
           controller.isLoadingLocation.value) {
         return Container();
       }
@@ -393,14 +758,26 @@ class NamiMain extends StatelessWidget {
 
   String _getLocationName(LatLng? position) {
     if (position == null) return "";
-    
+
     for (var location in Get.find<NavigationController>().locationSuggestions) {
       if ((location['lat'] - position.latitude).abs() < 0.0001 &&
           (location['lng'] - position.longitude).abs() < 0.0001) {
         return location['name'];
       }
     }
-    
+
     return "${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}";
+  }
+  String _getLocationDescription(LatLng? position) {
+    if (position == null) return "description as a placeholder";
+
+    for (var location in Get.find<NavigationController>().locationSuggestions) {
+      if ((location['lat'] - position.latitude).abs() < 0.0001 &&
+          (location['lng'] - position.longitude).abs() < 0.0001) {
+        return location['description'];
+      }
+    }
+
+    return "description as a placeholder";
   }
 }
