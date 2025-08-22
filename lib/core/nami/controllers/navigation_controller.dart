@@ -27,7 +27,7 @@ class NavigationController extends GetxController {
   final RxDouble estimatedTimeArrival = 0.0.obs;
   final RxBool hasDeviatedFromRoute = false.obs;
   final RxString errorMessage = ''.obs;
-  
+
   final RxList<List<LatLng>> alternativeRoutes = <List<LatLng>>[].obs;
   final RxInt selectedRouteIndex = 0.obs;
 
@@ -37,112 +37,125 @@ class NavigationController extends GetxController {
   DateTime? _navigationStartTime;
   final FlutterTts tts = FlutterTts();
   final MapController mapController = MapController();
-final List<Map<String, dynamic>> locationSuggestions = [
-  {
-    'id': 1,
-    'name': 'MUJ Main Gate',
-    'description': "The iconic dome-shaped entrance of Manipal University Jaipur, serving as the grand welcoming landmark to the campus.",
-    'lat': 26.841241261658997,
-    'lng': 75.5660735192115,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 2,
-    'name': 'MUJ DOM Library',
-    'description': "The central library of MUJ, offering a vast collection of books, journals, e-resources, and a quiet study environment.",
-    'lat': 26.841648544065848,
-    'lng': 75.56533929057673,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 3,
-    'name': 'MUJ Law Library',
-    'description': "Specialized library for law students, housing legal texts, case studies, journals, and research resources.",
-    'lat': 26.843518600668162,
-    'lng': 75.56399292394734,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 4,
-    'name': 'Old Mess',
-    'description': "One of the earliest student dining facilities on campus, providing meals and a social space for students.",
-    'lat': 26.842962294996134,
-    'lng': 75.5651385090395,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 5,
-    'name': 'AIC MUJ',
-    'description': "The Atal Incubation Centre at MUJ, fostering innovation, startups, and entrepreneurial activities.",
-    'lat': 26.843819718587728,
-    'lng': 75.5665295300519,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 6,
-    'name': 'Sharda Pai Auditorium',
-    'description': "A large auditorium used for seminars, cultural events, conferences, and university functions.",
-    'lat': 26.84312477058901,
-    'lng': 75.56606017796628,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 7,
-    'name': 'Vasanti R. Pai Auditorium',
-    'description': "An auditorium facility within the campus, used for lectures, workshops, and cultural programs.",
-    'lat': 26.84385668018438,
-    'lng': 75.56419798132941,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 8,
-    'name': 'Grand Staircase',
-    'description': "A central architectural highlight of MUJ, often used as a gathering spot and backdrop for events and photos.",
-    'lat': 26.842513504647947,
-    'lng': 75.56555146541382,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 9,
-    'name': 'Academic Block 1',
-    'description': "One of the main academic blocks with classrooms, labs, and faculty offices.",
-    'lat': 26.84259830237035,
-    'lng': 75.56382817072095,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 10,
-    'name': 'Academic Block 2',
-    'description': "Academic block hosting various departments, lecture halls, and study areas.",
-    'lat': 26.84328873212543,
-    'lng': 75.56604459515161,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 11,
-    'name': 'Academic Block 3',
-    'description': "Dedicated block for academic activities, classrooms, and department offices.",
-    'lat': 26.843655778782438,
-    'lng': 75.56438003382262,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 12,
-    'name': 'Academic Block 4',
-    'description': "Academic block with advanced facilities for teaching, learning, and research.",
-    'lat': 26.843965118302908,
-    'lng': 75.56489018652901,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-  {
-    'id': 13,
-    'name': 'Workshop',
-    'description': "Hands-on training space equipped with tools and machines for engineering and practical learning.",
-    'lat': 26.8437696296453,
-    'lng': 75.56701241102105,
-    'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-  },
-];
+  final List<Map<String, dynamic>> locationSuggestions = [
+    {
+      'id': "1",
+      'name': 'MUJ Main Gate',
+      'description':
+          "The iconic dome-shaped entrance of Manipal University Jaipur, serving as the grand welcoming landmark to the campus.",
+      'lat': 26.841241261658997,
+      'lng': 75.5660735192115,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "2",
+      'name': 'MUJ DOM Library',
+      'description':
+          "The central library of MUJ, offering a vast collection of books, journals, e-resources, and a quiet study environment.",
+      'lat': 26.841648544065848,
+      'lng': 75.56533929057673,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "3",
+      'name': 'MUJ Law Library',
+      'description':
+          "Specialized library for law students, housing legal texts, case studies, journals, and research resources.",
+      'lat': 26.843518600668162,
+      'lng': 75.56399292394734,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "4",
+      'name': 'Old Mess',
+      'description':
+          "One of the earliest student dining facilities on campus, providing meals and a social space for students.",
+      'lat': 26.842962294996134,
+      'lng': 75.5651385090395,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "5",
+      'name': 'AIC MUJ',
+      'description':
+          "The Atal Incubation Centre at MUJ, fostering innovation, startups, and entrepreneurial activities.",
+      'lat': 26.843819718587728,
+      'lng': 75.5665295300519,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "6",
+      'name': 'Sharda Pai Auditorium',
+      'description':
+          "A large auditorium used for seminars, cultural events, conferences, and university functions.",
+      'lat': 26.84312477058901,
+      'lng': 75.56606017796628,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "7",
+      'name': 'Vasanti R. Pai Auditorium',
+      'description':
+          "An auditorium facility within the campus, used for lectures, workshops, and cultural programs.",
+      'lat': 26.84385668018438,
+      'lng': 75.56419798132941,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "8",
+      'name': 'Grand Staircase',
+      'description':
+          "A central architectural highlight of MUJ, often used as a gathering spot and backdrop for events and photos.",
+      'lat': 26.842513504647947,
+      'lng': 75.56555146541382,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "9",
+      'name': 'Academic Block 1',
+      'description':
+          "One of the main academic blocks with classrooms, labs, and faculty offices.",
+      'lat': 26.84259830237035,
+      'lng': 75.56382817072095,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "10",
+      'name': 'Academic Block 2',
+      'description':
+          "Academic block hosting various departments, lecture halls, and study areas.",
+      'lat': 26.84328873212543,
+      'lng': 75.56604459515161,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "11",
+      'name': 'Academic Block 3',
+      'description':
+          "Dedicated block for academic activities, classrooms, and department offices.",
+      'lat': 26.843655778782438,
+      'lng': 75.56438003382262,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "12",
+      'name': 'Academic Block 4',
+      'description':
+          "Academic block with advanced facilities for teaching, learning, and research.",
+      'lat': 26.843965118302908,
+      'lng': 75.56489018652901,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+    {
+      'id': "13",
+      'name': 'Workshop',
+      'description':
+          "Hands-on training space equipped with tools and machines for engineering and practical learning.",
+      'lat': 26.8437696296453,
+      'lng': 75.56701241102105,
+      'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+    },
+  ];
 
   @override
   void onInit() {
@@ -193,7 +206,8 @@ final List<Map<String, dynamic>> locationSuggestions = [
 
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw Exception("Location services are disabled. Please enable location services.");
+        throw Exception(
+            "Location services are disabled. Please enable location services.");
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -243,7 +257,7 @@ final List<Map<String, dynamic>> locationSuggestions = [
 
   void _onLocationUpdate(Position position) {
     final newPosition = LatLng(position.latitude, position.longitude);
-    
+
     currentPosition.value = newPosition;
     currentBearing.value = position.heading;
 
@@ -374,7 +388,8 @@ final List<Map<String, dynamic>> locationSuggestions = [
             currentStepIndex.value++;
 
             if (currentStepIndex.value < steps.length) {
-              speakStep(steps[currentStepIndex.value]['instruction'].toString());
+              speakStep(
+                  steps[currentStepIndex.value]['instruction'].toString());
             } else {
               speakStep("You have arrived at your destination!");
               stopNavigation();
@@ -512,7 +527,7 @@ final List<Map<String, dynamic>> locationSuggestions = [
 
     isLoadingRoute.value = true;
     errorMessage.value = '';
-    
+
     if (isNavigating.value) {
       stopNavigation();
     }
@@ -541,7 +556,8 @@ final List<Map<String, dynamic>> locationSuggestions = [
     routePoints.clear();
     steps.clear();
 
-    const String url = 'https://api.openrouteservice.org/v2/directions/foot-walking/geojson';
+    const String url =
+        'https://api.openrouteservice.org/v2/directions/foot-walking/geojson';
 
     await _getSingleRoute(url, 'fastest', true);
     try {
@@ -551,8 +567,8 @@ final List<Map<String, dynamic>> locationSuggestions = [
     }
   }
 
-  Future<void> _getSingleRoute(String url, String preference, bool isMainRoute) async {
-
+  Future<void> _getSingleRoute(
+      String url, String preference, bool isMainRoute) async {
     final Map<String, dynamic> body = {
       "coordinates": [
         [startPoint.value!.longitude, startPoint.value!.latitude],
@@ -579,18 +595,23 @@ final List<Map<String, dynamic>> locationSuggestions = [
       final Map<String, dynamic> routeData = json.decode(response.body);
 
       if (routeData['features'] != null && routeData['features'].isNotEmpty) {
-        final geometry = routeData['features'][0]['geometry']['coordinates'] as List;
-        final segments = routeData['features'][0]['properties']['segments'] as List;
+        final geometry =
+            routeData['features'][0]['geometry']['coordinates'] as List;
+        final segments =
+            routeData['features'][0]['properties']['segments'] as List;
 
         if (segments.isNotEmpty) {
           final instructionList = segments[0]['steps'] as List;
           final distance = segments[0]['distance'] as num;
 
-          final routeOption = geometry.map((coord) => LatLng(coord[1], coord[0])).toList();
+          final routeOption =
+              geometry.map((coord) => LatLng(coord[1], coord[0])).toList();
 
           if (isMainRoute) {
             routePoints.value = routeOption;
-            steps.value = instructionList.map((step) => step as Map<String, dynamic>).toList();
+            steps.value = instructionList
+                .map((step) => step as Map<String, dynamic>)
+                .toList();
             totalDistance.value = distance.toDouble();
             currentStepIndex.value = 0;
           }
